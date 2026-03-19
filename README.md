@@ -1,20 +1,20 @@
-### email-datasets
+# email-datasets
 Generate a dataset of emails
 
-### How to Use
+# How to Use
 
-# create venv
+### create venv
 
 ```bash
 python -m venv .venv
 ```
 
-# install dependencies
+### install dependencies
 
 ```bash
 pip install mlx_lm tqdm
 ```
-# create Datasets
+### Create Datasets
 
 ```bash
 python makedatasets.py
