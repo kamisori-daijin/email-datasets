@@ -71,8 +71,8 @@ def get_prompt():
     return instruction, full_prompt
 
 # 3. Setting up the generation loop
-OUTPUT_FILE = "email_dataset_100k_v2.jsonl"
-num_samples = 100000
+OUTPUT_FILE = "email_dataset_20k.jsonl"
+num_samples = 20000
 
 
 # --- Restart logic started ---
