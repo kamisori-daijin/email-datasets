@@ -1,14 +1,14 @@
 import json
-import os # 追加
+import os 
 import random
 from tqdm import tqdm
 from mlx_lm import load, generate
 from mlx_lm.sample_utils import make_sampler
 
-# 1. モデルのロード
+# 1. Loading the model
 model, tokenizer = load("mlx-community/gemma-3-4b-it-4bit-DWQ")
 
-# 2. リスト設定（内容は変更なし）
+
 roles = [
     "CEO", "CTO", "Founder", "Junior Developer", "Senior Engineer", 
     "Product Manager", "Sales Executive", "Customer Success Manager", 
@@ -70,35 +70,34 @@ def get_prompt():
     )
     return instruction, full_prompt
 
-# 3. 生成ループの設定と【再開機能】
+# 3. Setting up the generation loop
 OUTPUT_FILE = "email_dataset_100k_v2.jsonl"
 num_samples = 100000
 
 
-# --- 再開ロジック開始 ---
+# --- Restart logic started ---
 start_id = 0
 if os.path.exists(OUTPUT_FILE):
     with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
-        for line in f:  # readlines()を使わず、1行ずつ回す（超軽量）
+        for line in f:  
             try:
                 last_line = json.loads(line)
                 start_id = last_line["id"] + 1
             except Exception:
                 pass
 print(f"Resuming from ID: {start_id}")
-# --- 再開ロジック終了 ---
+# --- End of restart logic ---
 
 temperature = 0.8
 sampler = make_sampler(temp=temperature)
 
-# "a" モードで追記していく
-# --- 生成ループ部分 (修正版) ---
+# Adding in "a" mode
 with open(OUTPUT_FILE, "a", encoding="utf-8", buffering=1) as f:
     for i in tqdm(range(start_id, num_samples)):
-        # 1. プロンプトの取得
+        # 1. Obtaining the prompt
         instruction, prompt = get_prompt()
         
-        # 2. 生成 (1件ずつ確実に)
+        # 2. Generation 
         response = generate(
             model, 
             tokenizer, 
@@ -109,40 +108,39 @@ with open(OUTPUT_FILE, "a", encoding="utf-8", buffering=1) as f:
         )
         
         try:
-                    # 1. レスポンスから最初の { と 最後の } を探す
+            # 1. Find the first { and last } in the response.
             raw_res = response.strip()
                     
-            # 命令で最初に "{" を出させているので、基本は先頭にあるはずですが
-            # 念のため最初と最後のカッコの位置を特定
+           
             start_idx = raw_res.find("{")
             end_idx = raw_res.rfind("}")
                     
             if start_idx != -1 and end_idx != -1:
-                # { から } までを抽出
+               
                 clean_output_str = "{" + raw_res[start_idx+1 : end_idx] + "}"
                 email_json = json.loads(clean_output_str) 
             else:
-                # カッコが見つからない場合、プロンプトの続きとして結合を試みる
-                # （Instructionで "JSON: {" と言っているので、続きだけ返ってくる場合）
+                # If parentheses are not found, attempt to concatenate them as a continuation of the prompt.
+            
                 clean_output_str = "{" + raw_res.split("}")[0] + "}"
                 email_json = json.loads(clean_output_str) 
             
-            # 4. データの整理
+           # 4. Data organization
             data = {
                 "id": i,
                 "instruction": instruction,
                 "output": email_json
             }
             
-            # 5. 書き込み
+            # 5. Writing
             f.write(json.dumps(data, ensure_ascii=False) + "\n")
             
-            # 10件ごとにディスクに書き出し
+            # Write to disk every 10 items
             if i % 10 == 0:
                 f.flush()
             os.fsync(f.fileno())    
         except Exception:
-            # 解析に失敗した場合はそのIDを飛ばして次へ
+            # If the analysis fails, skip that ID and move on to the next step.
             tqdm.write(f"ID {i} failed | Response: {response[:30]}...")
             print(f"\n--- DEBUG (ID {i}) ---")
             print(f"RAW RESPONSE: |{response}|")
