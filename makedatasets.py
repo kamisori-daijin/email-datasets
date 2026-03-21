@@ -1,13 +1,13 @@
 import json
 import os 
 import random
+import re  
 from tqdm import tqdm
 from mlx_lm import load, generate
 from mlx_lm.sample_utils import make_sampler
 
 # 1. Loading the model
 model, tokenizer = load("mlx-community/gemma-3-4b-it-4bit-DWQ")
-
 
 roles = [
     "CEO", "CTO", "Founder", "Junior Developer", "Senior Engineer", 
@@ -45,13 +45,10 @@ contexts = [
     "MarketOpening", "LowSignal", "DataLeak"
 ]
 
+
 def get_prompt():
     r, t, tone, s, c = random.choice(roles), random.choice(targets), random.choice(tones), random.choice(scenarios), random.choice(contexts)
-    
-    
     instruction = f"Write {tone} email from {r} to {t} about {s} ({c}). Max 150 words."
-    
-   
     full_prompt = (
         f"Instruction: {instruction}\n"
         "Constraint: You MUST output in the following format exactly:\n"
@@ -92,13 +89,20 @@ with open(OUTPUT_FILE, "a", encoding="utf-8", buffering=1) as f:
             verbose=False
         )
         
-        raw_res = response.strip()
+        # --- cleanup  ---
+        # 1. delete <expand> Tag
+        cleaned_res = re.sub(r'<expand>.*?</expand>', '', response, flags=re.DOTALL)
         
        
+        parts = re.findall(r'(<(think|generate)>.*?</\2>)', cleaned_res, flags=re.DOTALL)
+        
+        
+        raw_res = "\n".join([p[0] for p in parts]).strip()
+   
+        
+ 
         if "<think>" in raw_res and "<generate>" in raw_res:
-            
             full_text = f"<user>\n{instruction}\n{raw_res}"
-            
             
             if not full_text.endswith("</s>"):
                 full_text += "</s>"
@@ -111,10 +115,10 @@ with open(OUTPUT_FILE, "a", encoding="utf-8", buffering=1) as f:
             
             f.write(json.dumps(data, ensure_ascii=False) + "\n")
             
-          
             if i % 10 == 0:
                 f.flush()
                 os.fsync(f.fileno())
         else:
-            tqdm.write(f"ID {i} failed: Missing essential CoT tags.")
+            tqdm.write(f"ID {i} failed: Tag mismatch or cleaning error.")
+            
             continue
