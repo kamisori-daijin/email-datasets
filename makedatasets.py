@@ -48,7 +48,7 @@ contexts = [
 
 def get_prompt():
     r, t, tone, s, c = random.choice(roles), random.choice(targets), random.choice(tones), random.choice(scenarios), random.choice(contexts)
-    instruction = f"Write {tone} email from {r} to {t} about {s} ({c}). Max 150 words."
+    instruction = f"Write {tone} email from {r} to {t} about {s} ({c}). Max 120 words."
     
    
     full_prompt = (
