@@ -49,11 +49,22 @@ contexts = [
 def get_prompt():
     r, t, tone, s, c = random.choice(roles), random.choice(targets), random.choice(tones), random.choice(scenarios), random.choice(contexts)
     instruction = f"Write {tone} email from {r} to {t} about {s} ({c}). Max 150 words."
+    
+   
     full_prompt = (
-        f"Instruction: {instruction}\n"
-        "Constraint: You MUST output in the following format exactly:\n"
-        "<think>\n[Brief reasoning]\n</think>\n"
-        "<generate>\n[Subject & Body]\n</generate>"
+        f"Instruction: {instruction}\n\n"
+        "Constraint: You MUST output in the following format exactly. \n"
+        "The <think> section must be a concise bulleted list (max 3 items, 5 words each).\n\n"
+        "Format Example:\n"
+        "<think>\n"
+        "- Goal: [Objective]\n"
+        "- Reason: [Brief context]\n"
+        "- Tone: [Specific style]\n"
+        "</think>\n"
+        "<generate>\n"
+        "Subject: [Subject]\n\n"
+        "[Body]\n"
+        "</generate>"
     )
     return instruction, full_prompt
 

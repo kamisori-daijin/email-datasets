@@ -2,5 +2,6 @@
 venv/
 .DS_Store
 .zed/
-
+checkpoints2.0/
+tokenizetest.py
 
