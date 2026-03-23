@@ -95,41 +95,41 @@ with open(OUTPUT_FILE, "a", encoding="utf-8", buffering=1) as f:
             model, 
             tokenizer, 
             prompt=prompt, 
-            max_tokens=600, 
+            max_tokens=300, 
             sampler=sampler,
             verbose=False
         )
         
         # --- cleanup  ---
         # 1. delete <expand> Tag
-        p
-                
         cleaned_res = re.sub(r'<expand>.*?</expand>', '', response, flags=re.DOTALL)
-                
-                
-        think_match = re.search(r'(<think>.*?</think>)', cleaned_res, flags=re.DOTALL)
-        generate_match = re.search(r'(<generate>.*?</generate>)', cleaned_res, flags=re.DOTALL)
-                
-        if think_match and generate_match:
-            
-            raw_res = f"{think_match.group(1)}\n{generate_match.group(1)}"
-                    
+        
+       
+        parts = re.findall(r'(<(think|generate)>.*?</\2>)', cleaned_res, flags=re.DOTALL)
+        
+        
+        raw_res = "\n".join([p[0] for p in parts]).strip()
+   
+        
+ 
+        if "<think>" in raw_res and "<generate>" in raw_res:
             full_text = f"<user>\n{instruction}\n{raw_res}"
-                    
-        if not full_text.endswith("</s>"):
-            full_text += "</s>"
-                    
+            
+            if not full_text.endswith("</s>"):
+                full_text += "</s>"
+            
             data = {
                 "id": i,
                 "instruction": instruction,
                 "text": full_text  
             }
-                    
+            
             f.write(json.dumps(data, ensure_ascii=False) + "\n")
-                    
-        if i % 10 == 0:
-            f.flush()
-            os.fsync(f.fileno())
+            
+            if i % 10 == 0:
+                f.flush()
+                os.fsync(f.fileno())
         else:
-            tqdm.write(f"ID {i} failed: Required tags not found.")
+            tqdm.write(f"ID {i} failed: Tag mismatch or cleaning error.")
+            
             continue
